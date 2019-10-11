@@ -1,28 +1,37 @@
 module Main exposing (..)
 
-import Browser
-import Html exposing (Html, text, div, h1, img)
-import Html.Attributes exposing (src)
-
-
----- MODEL ----
+import Browser exposing (Document, UrlRequest)
+import Browser.Navigation as Navigation
+import Html exposing (..)
+import Html.Attributes
+import Routes exposing (Route)
+import Url exposing (Url)
 
 
 type alias Model =
-    {}
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( {}, Cmd.none )
+    { val : Int
+    }
 
 
 
----- UPDATE ----
+-- MODEL
+
+
+initialModel : Navigation.Key -> Model
+initialModel navigationKey =
+    { val = 1 }
+
+
+init : () -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init () url navigationKey =
+    ( { val = 1 }, Cmd.none )
 
 
 type Msg
     = NoOp
+    | ChangeRoute (Maybe Route)
+    | ClickedLink UrlRequest
+    | ChangedUrl Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -30,27 +39,25 @@ update msg model =
     ( model, Cmd.none )
 
 
-
----- VIEW ----
-
-
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
+    { title = "Huzzah"
+    , body =
+        [ div
+            [ Html.Attributes.id "main"
+            ]
+            [ h1 [] [ text "Works" ]
+            ]
         ]
+    }
 
 
-
----- PROGRAM ----
-
-
-main : Program () Model Msg
 main =
-    Browser.element
-        { view = view
-        , init = \_ -> init
+    Browser.application
+        { init = init
+        , onUrlChange = ChangedUrl
+        , onUrlRequest = ClickedLink
+        , subscriptions = \_ -> Sub.none
         , update = update
-        , subscriptions = always Sub.none
+        , view = view
         }
