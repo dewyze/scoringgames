@@ -1,0 +1,160 @@
+html, body{
+  background-color: #111;
+  text-align: center;
+  color: white;
+  height: 100%;
+}
+
+.wrapper {
+  height: 100%;
+  margin: 0 auto;
+}
+
+#main {
+  height: 100vh;
+}
+
+.header-row {
+  height: 6%;
+  font-family: "Arial Black", sans-serif;
+  font-size: 4vw;
+}
+
+.negative-toggle {
+  font-size: 5.5vh;
+}
+
+.marker-row {
+  height: 12%;
+}
+
+.total-row {
+  height: 10%;
+  font-family: "Arial Black", sans-serif;
+  font-size: 6vh;
+  border-top: 2px solid white;
+  margin-top: 5px;
+}
+
+.total-row div {
+  vertical-align: top;
+}
+
+.player-column {
+  height: 100%;
+  display: inline-block;
+  position: relative;
+}
+
+.closed svg {
+  color: "red";
+}
+
+.players-2 {
+  width: 40%;
+}
+
+.players-3 {
+  width: 26%;
+}
+
+.players-4 {
+  width: 20%;
+}
+
+.marker-row .player-column {
+  font-size: 9vh;
+  vertical-align: top;
+  font-family: "Arial Black", sans-serif;
+}
+
+
+.winner {
+  position: fixed;
+  top: 50;
+  width: 100px;
+  margin: 0 auto;
+  height: 200px;
+}
+
+
+/* .left svg { */
+/*   position: absolute; */
+/*   right: 5px; */
+/* } */
+/*  */
+/* .right svg { */
+/*   position: absolute; */
+/*   left: 5px; */
+/* } */
+
+.number-column {
+  width: 20%;
+  height: 100%;
+  display: inline-block;
+}
+
+.marker-row .number-column {
+  font-family: "Arial Black", sans-serif;
+  font-size: 9vh;
+  vertical-align: top;
+}
+
+.header-row div {
+  vertical-align: top;
+}
+
+.settings {
+  font-size: 1.8rem;
+  position: relative;
+}
+
+.settings a {
+  text-decoration: none;
+  color: white;
+}
+
+label {
+  text-align: left;
+  display: block;
+}
+
+.player-count-label {
+  margin-right: 15px;
+  float: left;
+}
+
+.player-count-button {
+  background-color: white;
+  border: none;
+  color: black;
+  border-radius: 20px;
+  text-align: center;
+  font-size: 1.4rem;
+}
+
+.player-count-number {
+  margin: 0px 10px;
+}
+
+.player-name-input {
+  display: block;
+  background-color: #111;
+  color: white;
+  margin-bottom: 40px;
+  padding-left: 30px;
+  width: 70%;
+  border: 0;
+  border-bottom: 2px solid white;
+  margin-left: 20px;
+}
+
+.new-game {
+  margin-top: 15px;
+  width: 100%;
+  text-align: center;
+}
+
+.not-found {
+  color: red;
+}
