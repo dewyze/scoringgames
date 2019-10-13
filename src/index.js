@@ -2,8 +2,20 @@ import "./main.css";
 import { Elm } from "./Main.elm";
 import * as serviceWorker from "./serviceWorker";
 
-Elm.Main.init({
+// var config = localStorage.getItem("config");
+// config = { message: "Success!", click: 0 };
+var app = Elm.Main.init({
+  // flags: config,
   node: document.getElementById("root")
+});
+app.ports.storage.subscribe(function(data) {
+  console.log("GOT DATA: ");
+  if (data.method == "get") {
+    console.log("GOT method: " + data.method);
+    console.log("GOT APP: " + data.app);
+    var appConfig = localStorage.getItem(data.app) || {};
+    app.ports.configs.send(appConfig);
+  }
 });
 document.getElementById("main").style.height = window.innerHeight + "px";
 

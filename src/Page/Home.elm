@@ -1,8 +1,12 @@
-module Page.Home exposing (Model, Msg, init, subscriptions, toSession, update, view)
+module Page.Home exposing (Model, Msg, decoder, init, subscriptions, toSession, update, view)
 
+import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode exposing (Decoder, Value, decodeValue, int, string)
+import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
+import Result exposing (toMaybe)
 import Session exposing (Session)
 
 
@@ -17,14 +21,46 @@ type alias Model =
     }
 
 
-init : Session -> ( Model, Cmd Msg )
-init session =
-    ( { message = "Hello World " ++ session.id
-      , clicks = 0
-      , session = session
-      }
-    , Cmd.none
-    )
+decoder : Session -> Decoder Model
+decoder session =
+    Decode.succeed Model
+        |> required "message" string
+        |> required "clicks" int
+        |> hardcoded session
+
+
+defaultModel : Session -> Model
+defaultModel session =
+    { message = "Hello World"
+    , clicks = 0
+    , session = session
+    }
+
+
+init : Decode.Value -> Session -> ( Model, Cmd Msg )
+init value session =
+    let
+        result =
+            decodeValue Decode.string value
+                |> Result.andThen (Decode.decodeString (decoder session))
+
+        -- model =
+        --     Result.withDefault (defaultModel session) result
+    in
+    case result of
+        Result.Ok res ->
+            let
+                info =
+                    Debug.log "HI" 1
+            in
+            ( res, Cmd.none )
+
+        Result.Err err ->
+            let
+                info =
+                    Debug.log (Decode.errorToString err) 1
+            in
+            ( defaultModel session, Cmd.none )
 
 
 

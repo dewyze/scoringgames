@@ -1,4 +1,4 @@
-module Routes exposing (Route(..), fromUrl)
+module Routes exposing (Route(..), fromUrl, replaceUrl, routeToConfig)
 
 import Browser.Navigation as Nav
 import Url exposing (Url)
@@ -32,6 +32,13 @@ replaceUrl navKey route =
 
 
 -- INTERNAL
+
+
+routeToConfig : Route -> String
+routeToConfig route =
+    case route of
+        Home ->
+            "home"
 
 
 routeToString : Route -> String
