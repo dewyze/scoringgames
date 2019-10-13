@@ -119,9 +119,10 @@ update msg model =
         ( ReceivedConfig config, WaitingForConfig session route ) ->
             changeRoute config route model
 
-        -- Useful when we have an active session
-        -- ( GotSession session, Loading _ ) ->
-        --   ( Loading session
+        ( GotHomeMsg subMsg, Home home ) ->
+            Home.update subMsg home
+                |> updateWith Home GotHomeMsg model
+
         _ ->
             ( model, Cmd.none )
 

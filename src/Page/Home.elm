@@ -44,23 +44,10 @@ init value session =
             decodeValue Decode.string value
                 |> Result.andThen (Decode.decodeString (decoder session))
 
-        -- model =
-        --     Result.withDefault (defaultModel session) result
+        model =
+            Result.withDefault (defaultModel session) result
     in
-    case result of
-        Result.Ok res ->
-            let
-                info =
-                    Debug.log "HI" 1
-            in
-            ( res, Cmd.none )
-
-        Result.Err err ->
-            let
-                info =
-                    Debug.log (Decode.errorToString err) 1
-            in
-            ( defaultModel session, Cmd.none )
+    ( model, Cmd.none )
 
 
 
