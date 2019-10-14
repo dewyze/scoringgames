@@ -11,11 +11,10 @@ import Json.Decode as Decode exposing (Decoder, Value, int, string)
 import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Page exposing (Page)
-import Page.Home as Home
+import Page.Cricket as Cricket
 import Routes exposing (Route)
 import Session exposing (Session, init)
 import Url exposing (Url)
-
 
 
 -- MODEL
@@ -25,7 +24,7 @@ type Model
     = Initialized Session
     | WaitingForConfig Session Route
     | NotFound Session
-    | Home Home.Model
+    | Cricket Cricket.Model
 
 
 init : () -> Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -43,7 +42,7 @@ type Msg
     | ReceivedConfig Decode.Value
     | ChangedUrl Url
     | ClickedLink UrlRequest
-    | GotHomeMsg Home.Msg
+    | GotCricketMsg Cricket.Msg
     | GotSession Session
 
 
@@ -53,27 +52,22 @@ requestRoute maybeRoute model =
         session =
             toSession model
     in
-    case maybeRoute of
-        Nothing ->
-            ( NotFound session, Cmd.none )
+        case maybeRoute of
+            Nothing ->
+                ( NotFound session, Cmd.none )
 
-        Just route ->
-            let
-                routeString =
-                    Routes.routeToConfig route
+            Just route ->
+                let
+                    routeString =
+                        Routes.routeToConfig route
 
-                value =
-                    Encode.object
-                        [ ( "app", Encode.string routeString )
-                        , ( "method", Encode.string "get" )
-                        ]
-            in
-            ( WaitingForConfig session route, storage value )
-
-
-
--- Home.init session
---     |> updateWith Home GotHomeMsg model
+                    value =
+                        Encode.object
+                            [ ( "app", Encode.string routeString )
+                            , ( "method", Encode.string "get" )
+                            ]
+                in
+                    ( WaitingForConfig session route, storage value )
 
 
 toSession : Model -> Session
@@ -88,8 +82,8 @@ toSession model =
         NotFound session ->
             session
 
-        Home home ->
-            Home.toSession home
+        Cricket cricket ->
+            Cricket.toSession cricket
 
 
 port storage : Encode.Value -> Cmd msg
@@ -104,10 +98,10 @@ changeRoute value route model =
         session =
             toSession model
     in
-    case route of
-        Routes.Home ->
-            Home.init value session
-                |> updateWith Home GotHomeMsg model
+        case route of
+            Routes.Cricket ->
+                Cricket.init value session
+                    |> updateWith Cricket GotCricketMsg model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -119,9 +113,9 @@ update msg model =
         ( ReceivedConfig config, WaitingForConfig session route ) ->
             changeRoute config route model
 
-        ( GotHomeMsg subMsg, Home home ) ->
-            Home.update subMsg home
-                |> updateWith Home GotHomeMsg model
+        ( GotCricketMsg subMsg, Cricket cricket ) ->
+            Cricket.update subMsg cricket
+                |> updateWith Cricket GotCricketMsg model
 
         _ ->
             ( model, Cmd.none )
@@ -146,22 +140,22 @@ view model =
                 { title, body } =
                     Page.view page pageModel
             in
-            { title = title
-            , body = List.map (Html.map toMsg) body
-            }
+                { title = title
+                , body = List.map (Html.map toMsg) body
+                }
     in
-    case model of
-        Initialized _ ->
-            Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
+        case model of
+            Initialized _ ->
+                Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
 
-        WaitingForConfig _ _ ->
-            Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
+            WaitingForConfig _ _ ->
+                Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
 
-        NotFound _ ->
-            Page.view Page.Other { title = "NotFound", content = h1 [] [ text "NOT FOUND" ] }
+            NotFound _ ->
+                Page.view Page.Other { title = "NotFound", content = h1 [] [ text "NOT FOUND" ] }
 
-        Home home ->
-            viewPage Page.Home GotHomeMsg (Home.view home)
+            Cricket cricket ->
+                viewPage Page.Cricket GotCricketMsg (Cricket.view cricket)
 
 
 

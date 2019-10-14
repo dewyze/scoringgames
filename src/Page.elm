@@ -6,7 +6,7 @@ import Html.Attributes exposing (..)
 
 
 type Page
-    = Home
+    = Cricket
     | Other
 
 

@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg, decoder, init, subscriptions, toSession, update, view)
+module Page.Cricket exposing (Model, Msg, decoder, init, subscriptions, toSession, update, view)
 
 import Debug
 import Html exposing (..)
@@ -8,7 +8,6 @@ import Json.Decode as Decode exposing (Decoder, Value, decodeValue, int, string)
 import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
 import Result exposing (toMaybe)
 import Session exposing (Session)
-
 
 
 -- MODEL
@@ -47,7 +46,7 @@ init value session =
         model =
             Result.withDefault (defaultModel session) result
     in
-    ( model, Cmd.none )
+        ( model, Cmd.none )
 
 
 
@@ -72,7 +71,7 @@ update msg model =
 viewContent : Model -> Html Msg
 viewContent model =
     div [ class "page" ]
-        [ h1 [] [ text "Home Page" ]
+        [ h1 [] [ text "Cricket Page" ]
         , h2 [] [ text model.message ]
         , h3 [] [ text ("Clicks: " ++ String.fromInt model.clicks) ]
         , button [ onClick Increment ] [ text "Click Me" ]
@@ -81,7 +80,7 @@ viewContent model =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Home"
+    { title = "Cricket"
     , content = viewContent model
     }
 

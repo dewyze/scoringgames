@@ -6,13 +6,13 @@ import Url.Parser as Parser exposing (Parser)
 
 
 type Route
-    = Home
+    = Cricket
 
 
 routes : Parser (Route -> a) a
 routes =
     Parser.oneOf
-        [ Parser.map Home Parser.top
+        [ Parser.map Cricket Parser.top
         ]
 
 
@@ -37,8 +37,8 @@ replaceUrl navKey route =
 routeToConfig : Route -> String
 routeToConfig route =
     case route of
-        Home ->
-            "home"
+        Cricket ->
+            "cricket"
 
 
 routeToString : Route -> String
@@ -46,7 +46,7 @@ routeToString route =
     let
         pieces =
             case route of
-                Home ->
+                Cricket ->
                     []
     in
-    "#/" ++ String.join "/" pieces
+        "#/" ++ String.join "/" pieces
