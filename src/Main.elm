@@ -12,6 +12,7 @@ import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Page exposing (Page)
 import Page.Cricket as Cricket
+import Page.Home as Home
 import Routes exposing (Route)
 import Session exposing (Session, init)
 import Url exposing (Url)
@@ -21,7 +22,7 @@ import Url exposing (Url)
 
 
 type Model
-    = Initialized Session
+    = Home Home.Model
     | WaitingForConfig Session Route
     | NotFound Session
     | Cricket Cricket.Model
@@ -29,7 +30,7 @@ type Model
 
 init : () -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init () url navKey =
-    requestRoute (Routes.fromUrl url) (Initialized (Session.init navKey))
+    requestRoute (Routes.fromUrl url) (Home (Session.init navKey))
 
 
 
@@ -56,6 +57,9 @@ requestRoute maybeRoute model =
             Nothing ->
                 ( NotFound session, Cmd.none )
 
+            Just Routes.Home ->
+                ( Home session, Cmd.none )
+
             Just route ->
                 let
                     routeString =
@@ -73,7 +77,7 @@ requestRoute maybeRoute model =
 toSession : Model -> Session
 toSession model =
     case model of
-        Initialized session ->
+        Home session ->
             session
 
         WaitingForConfig session _ ->
@@ -99,6 +103,9 @@ changeRoute value route model =
             toSession model
     in
         case route of
+            Routes.Home ->
+                ( Home session, Routes.replaceUrl session.navKey Routes.Home )
+
             Routes.Cricket ->
                 Cricket.init value session
                     |> updateWith Cricket GotCricketMsg model
@@ -106,19 +113,36 @@ changeRoute value route model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model ) of
-        ( RequestRoute maybeRoute, _ ) ->
-            requestRoute maybeRoute model
+    let
+        session =
+            toSession model
+    in
+        case ( msg, model ) of
+            ( ClickedLink urlRequest, _ ) ->
+                case urlRequest of
+                    Browser.Internal url ->
+                        ( model, Nav.pushUrl session.navKey (Url.toString url) )
 
-        ( ReceivedConfig config, WaitingForConfig session route ) ->
-            changeRoute config route model
+                    Browser.External href ->
+                        ( model
+                        , Nav.load href
+                        )
 
-        ( GotCricketMsg subMsg, Cricket cricket ) ->
-            Cricket.update subMsg cricket
-                |> updateWith Cricket GotCricketMsg model
+            ( ChangedUrl url, _ ) ->
+                requestRoute (Routes.fromUrl url) model
 
-        _ ->
-            ( model, Cmd.none )
+            ( RequestRoute maybeRoute, _ ) ->
+                requestRoute maybeRoute model
+
+            ( ReceivedConfig config, WaitingForConfig _ route ) ->
+                changeRoute config route model
+
+            ( GotCricketMsg subMsg, Cricket cricket ) ->
+                Cricket.update subMsg cricket
+                    |> updateWith Cricket GotCricketMsg model
+
+            _ ->
+                ( model, Cmd.none )
 
 
 updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -145,11 +169,11 @@ view model =
                 }
     in
         case model of
-            Initialized _ ->
-                Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
+            Home home ->
+                Page.view Page.Home (Home.view home)
 
             WaitingForConfig _ _ ->
-                Page.view Page.Other { title = "Initialized", content = h1 [] [ text "BLANK" ] }
+                Page.view Page.Other { title = "WAITING", content = h1 [] [ text "BLANK" ] }
 
             NotFound _ ->
                 Page.view Page.Other { title = "NotFound", content = h1 [] [ text "NOT FOUND" ] }
