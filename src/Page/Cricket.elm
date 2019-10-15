@@ -49,7 +49,6 @@ type alias Player =
 
 type alias Model =
     { players : List Player
-    , numPlayers : Int
     , subtractingMode : Bool
     , settingsMode : Bool
     , session : Session
@@ -82,7 +81,6 @@ initPlayer id =
 defaultModel : Session -> Model
 defaultModel session =
     { players = List.map initPlayer [ 1, 2 ]
-    , numPlayers = 2
     , subtractingMode = False
     , settingsMode = False
     , session = session
@@ -156,7 +154,6 @@ decoder : Session -> Decoder Model
 decoder session =
     Decode.succeed Model
         |> hardcoded (List.map initPlayer [ 1, 2, 3, 4 ])
-        |> hardcoded 2
         |> hardcoded False
         |> hardcoded False
         |> hardcoded session
@@ -283,8 +280,7 @@ update msg model =
         DecrementNumPlayers ->
             if List.length model.players > 2 then
                 ( { model
-                    | numPlayers = model.numPlayers - 1
-                    , players = removePlayer model.players
+                    | players = removePlayer model.players
                   }
                 , Cmd.none
                 )
@@ -295,8 +291,7 @@ update msg model =
         IncrementNumPlayers ->
             if List.length model.players < 4 then
                 ( { model
-                    | numPlayers = model.numPlayers + 1
-                    , players = addPlayer model.players
+                    | players = addPlayer model.players
                   }
                 , Cmd.none
                 )
@@ -348,14 +343,18 @@ viewSettingsPlayer numPlayers index player =
 
 viewSettings : Model -> Html Msg
 viewSettings model =
+    let
+        numPlayers =
+            List.length model.players
+    in
     div
         [ id "main", class "wrapper settings" ]
         ([ span [ class "player-count-label" ] [ text "# of Players" ]
          , button [ class "player-count-button", onClick DecrementNumPlayers ] [ text "-" ]
-         , span [ class "player-count-number" ] [ text (fromInt model.numPlayers) ]
+         , span [ class "player-count-number" ] [ text (fromInt numPlayers) ]
          , button [ class "player-count-button", onClick IncrementNumPlayers ] [ text "+" ]
          ]
-            ++ List.concat (List.indexedMap (viewSettingsPlayer model.numPlayers) model.players)
+            ++ List.concat (List.indexedMap (viewSettingsPlayer numPlayers) model.players)
             ++ [ button [ onClick ToggleSettingsMode ] [ text "Done" ]
                , div [ class "new-game" ] [ button [ onClick NewGame ] [ text "New Game" ] ]
                ]
@@ -447,12 +446,16 @@ viewPlayerHeader numPlayers player =
 
 viewHeader : Model -> List (Html Msg)
 viewHeader model =
+    let
+        numPlayers =
+            List.length model.players
+    in
     [ div
         [ class "row info-row header-row" ]
         ([ div [ class "number-column negative-toggle", onClick ToggleSubtractingMode ]
             [ text (editingSymbol model) ]
          ]
-            ++ List.map (\player -> viewPlayerHeader model.numPlayers player) model.players
+            ++ List.map (\player -> viewPlayerHeader numPlayers player) model.players
         )
     ]
 
@@ -499,8 +502,11 @@ viewPlayerTarget target model player =
         closed =
             targetClosedForAll model target
 
+        playersCount =
+            fromInt (List.length model.players)
+
         cssClass =
-            "player-column players-" ++ fromInt model.numPlayers ++ " marker"
+            "player-column players-" ++ playersCount ++ " marker"
     in
     if model.subtractingMode && points > 0 then
         div [ class cssClass, onClick (ClickTarget player.id target state) ]
@@ -547,11 +553,14 @@ scoreForPlayer player =
     List.foldl (+) 0 (List.map pointsForState states)
 
 
-viewPlayerTotal : Int -> Player -> Html Msg
-viewPlayerTotal numPlayers player =
+viewPlayerTotal : Model -> Player -> Html Msg
+viewPlayerTotal model player =
     let
+        numPlayers =
+            fromInt (List.length model.players)
+
         cssClass =
-            "player-total player-column players-" ++ fromInt numPlayers
+            "player-total player-column players-" ++ numPlayers
     in
     div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
 
@@ -562,7 +571,7 @@ viewTotal model =
         ([ div [ class "number-column", onClick ToggleSettingsMode ]
             [ img [ src "%PUBLIC_URL%/settings.png", SvgAttr.height "90%" ] [] ]
          ]
-            ++ List.map (\player -> viewPlayerTotal model.numPlayers player) model.players
+            ++ List.map (\player -> viewPlayerTotal model player) model.players
         )
     ]
 
