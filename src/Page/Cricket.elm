@@ -1,6 +1,6 @@
 module Page.Cricket exposing (Model, Msg, decoder, init, subscriptions, toSession, update, view)
 
-import Debug
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -10,7 +10,37 @@ import Result exposing (toMaybe)
 import Session exposing (Session)
 
 
+
 -- MODEL
+
+
+type alias Target =
+    Int
+
+
+type TargetState
+    = Open
+    | One
+    | Two
+    | Points Int
+
+
+type alias PlayerId =
+    Int
+
+
+type alias TargetRow =
+    Dict PlayerId TargetState
+
+
+type alias Board =
+    Dict Target TargetRow
+
+
+type alias Player =
+    { id : PlayerId
+    , name : String
+    }
 
 
 type alias Model =
@@ -46,7 +76,7 @@ init value session =
         model =
             Result.withDefault (defaultModel session) result
     in
-        ( model, Cmd.none )
+    ( model, Cmd.none )
 
 
 
