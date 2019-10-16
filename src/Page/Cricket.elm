@@ -22,7 +22,7 @@ type alias Target =
 
 
 type alias Targets =
-    Dict Int TargetState
+    Dict Target TargetState
 
 
 type TargetState
@@ -42,8 +42,8 @@ type alias PlayerId =
 
 type alias Player =
     { id : PlayerId
-    , targets : Targets
     , name : String
+    , targets : Targets
     }
 
 
@@ -73,8 +73,8 @@ initTargets =
 initPlayer : Int -> Player
 initPlayer id =
     { id = id
-    , targets = initTargets
     , name = ""
+    , targets = initTargets
     }
 
 
@@ -88,72 +88,86 @@ defaultModel session =
 
 
 init : Decode.Value -> Session -> ( Model, Cmd Msg )
-init _ session =
-    ( defaultModel session, Cmd.none )
+init value session =
+    let
+        result =
+            decodeValue Decode.string value
+                |> Result.andThen (Decode.decodeString (decoder session))
+
+        model =
+            Result.withDefault (defaultModel session) result
+    in
+    ( model, Cmd.none )
 
 
 
--- init : Decode.Value -> Session -> ( Model, Cmd Msg )
--- init value session =
---     let
---         result =
---             decodeValue Decode.string value
---                 |> Result.andThen (Decode.decodeString (decoder session))
---
---         model =
---             Result.withDefault (defaultModel session) result
---     in
---     ( model, Cmd.none )
--- -- DECODERS
---
--- playersDecoder : Decoder (List Player)
--- playersDecoder =
---     list playerDecoder
---
---
--- playerDecoder : Decoder Player
--- playerDecoder =
---     Decode.succeed Player
---         |> required "id" string
---         |> required "name" string
---
---
--- targetStateDecoder : Decoder TargetState
--- targetStateDecoder =
---     Decode.string
---         |> Decode.andThen
---             (\str ->
---                 case str of
---                     "open" ->
---                         Decode.succeed Open
---
---                     "one" ->
---                         Decode.succeed One
---
---                     "two" ->
---                         Decode.succeed Two
---
---                     points ->
---                         Decode.succeed (Points (String.toInt points))
---             )
---
---
--- targetRowDecoder : Decoder TargetRow
--- targetRowDecoder =
---     keyValuePairs targetStateDecoder
---
---
--- boardDecoder : Decoder Board
--- boardDecoder =
---     keyValuePairs targetRowDecoder
---
---
+-- DECODERS
+
+
+targetStateDecoder : Decoder TargetState
+targetStateDecoder =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "open" ->
+                        Decode.succeed Open
+
+                    "one" ->
+                        Decode.succeed One
+
+                    "two" ->
+                        Decode.succeed Two
+
+                    points ->
+                        Decode.succeed (Points (Maybe.withDefault 0 (String.toInt points)))
+            )
+
+
+listToDictDecoder : List ( String, TargetState ) -> Decoder Targets
+listToDictDecoder list =
+    let
+        tupleConvert : ( String, TargetState ) -> ( Int, TargetState )
+        tupleConvert ( key, value ) =
+            let
+                intKey =
+                    String.toInt key
+            in
+            case intKey of
+                Just int ->
+                    ( int, value )
+
+                Nothing ->
+                    ( 0, value )
+
+        newList =
+            List.map (\tuple -> tupleConvert tuple) list
+    in
+    Decode.succeed (Dict.fromList newList)
+
+
+targetsDecoder : Decoder Targets
+targetsDecoder =
+    keyValuePairs targetStateDecoder |> Decode.andThen listToDictDecoder
+
+
+playerDecoder : Decoder Player
+playerDecoder =
+    Decode.succeed Player
+        |> required "id" int
+        |> required "name" string
+        |> required "targets" targetsDecoder
+
+
+playersDecoder : Decoder (List Player)
+playersDecoder =
+    list playerDecoder
 
 
 decoder : Session -> Decoder Model
 decoder session =
     Decode.succeed Model
-        |> hardcoded (List.map initPlayer [ 1, 2, 3, 4 ])
+        |> required "players" playersDecoder
         |> hardcoded False
         |> hardcoded False
         |> hardcoded session
