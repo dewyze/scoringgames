@@ -66,6 +66,7 @@ html, body{
   font-size: 9vh;
   vertical-align: top;
   font-family: "Arial Black", sans-serif;
+  touch-action: manipulation;
 }
 
 
