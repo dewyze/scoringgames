@@ -15,6 +15,8 @@ app.ports.storage.subscribe(function(data) {
     console.log("GOT APP: " + data.app);
     var appConfig = localStorage.getItem(data.app) || {};
     app.ports.configs.send(appConfig);
+  } else if (data.method == "set") {
+    localStorage.setItem(data.app, JSON.stringify(data.config));
   }
 });
 document.getElementById("main").style.height = window.innerHeight + "px";

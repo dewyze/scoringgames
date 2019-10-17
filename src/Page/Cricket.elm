@@ -6,6 +6,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode exposing (Decoder, Value, decodeValue, int, keyValuePairs, list, string)
 import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
+import Json.Encode as Encode
+import Ports exposing (storage)
 import Result exposing (toMaybe)
 import Session exposing (Session)
 import String exposing (fromInt, toInt)
@@ -173,6 +175,51 @@ decoder session =
         |> hardcoded session
 
 
+targetStateEncoder : TargetState -> Encode.Value
+targetStateEncoder targetState =
+    case targetState of
+        Open ->
+            Encode.string "open"
+
+        One ->
+            Encode.string "one"
+
+        Two ->
+            Encode.string "two"
+
+        Points p ->
+            Encode.string (fromInt p)
+
+
+targetsEncoder : Targets -> Encode.Value
+targetsEncoder targets_ =
+    Encode.dict fromInt targetStateEncoder targets_
+
+
+playerEncoder : Player -> Encode.Value
+playerEncoder player =
+    Encode.object
+        [ ( "id", Encode.int player.id )
+        , ( "name", Encode.string player.name )
+        , ( "targets", targetsEncoder player.targets )
+        ]
+
+
+configEncoder : List Player -> Encode.Value
+configEncoder players =
+    Encode.object
+        [ ( "players", Encode.list playerEncoder players ) ]
+
+
+encode : Model -> Encode.Value
+encode model =
+    Encode.object
+        [ ( "method", Encode.string "set" )
+        , ( "app", Encode.string "cricket" )
+        , ( "config", configEncoder model.players )
+        ]
+
+
 
 -- UPDATE
 
@@ -272,10 +319,14 @@ update msg model =
                         player
             in
             if not model.subtractingMode && targetClosedForAll model target then
-                ( model, Cmd.none )
+                ( model, storage (encode model) )
 
             else
-                ( { model | players = List.map updatePlayer model.players }, Cmd.none )
+                let
+                    newModel =
+                        { model | players = List.map updatePlayer model.players }
+                in
+                ( newModel, storage (encode newModel) )
 
         ToggleSettingsMode ->
             if model.settingsMode then
@@ -293,9 +344,13 @@ update msg model =
 
         DecrementNumPlayers ->
             if List.length model.players > 2 then
-                ( { model
-                    | players = removePlayer model.players
-                  }
+                let
+                    newModel =
+                        { model
+                            | players = removePlayer model.players
+                        }
+                in
+                ( newModel
                 , Cmd.none
                 )
 
@@ -304,28 +359,35 @@ update msg model =
 
         IncrementNumPlayers ->
             if List.length model.players < 4 then
-                ( { model
-                    | players = addPlayer model.players
-                  }
-                , Cmd.none
+                let
+                    newModel =
+                        { model
+                            | players = addPlayer model.players
+                        }
+                in
+                ( newModel
+                , storage (encode model)
                 )
 
             else
-                ( model, Cmd.none )
+                ( model, storage (encode model) )
 
         PlayerName id name ->
-            ( setPlayerName id model name, Cmd.none )
+            ( setPlayerName id model name, storage (encode model) )
 
         NewGame ->
             let
                 resetPlayer player =
                     { player | targets = initTargets }
+
+                newModel =
+                    { model
+                        | players = List.map resetPlayer model.players
+                        , settingsMode = False
+                    }
             in
-            ( { model
-                | players = List.map resetPlayer model.players
-                , settingsMode = False
-              }
-            , Cmd.none
+            ( newModel
+            , storage (encode newModel)
             )
 
 
