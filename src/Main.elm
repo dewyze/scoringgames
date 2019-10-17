@@ -13,9 +13,11 @@ import Json.Encode as Encode
 import Page exposing (Page)
 import Page.Cricket as Cricket
 import Page.Home as Home
+import Ports exposing (configs, storage)
 import Routes exposing (Route)
 import Session exposing (Session, init)
 import Url exposing (Url)
+
 
 
 -- MODEL
@@ -53,25 +55,25 @@ requestRoute maybeRoute model =
         session =
             toSession model
     in
-        case maybeRoute of
-            Nothing ->
-                ( NotFound session, Cmd.none )
+    case maybeRoute of
+        Nothing ->
+            ( NotFound session, Cmd.none )
 
-            Just Routes.Home ->
-                ( Home session, Cmd.none )
+        Just Routes.Home ->
+            ( Home session, Cmd.none )
 
-            Just route ->
-                let
-                    routeString =
-                        Routes.routeToConfig route
+        Just route ->
+            let
+                routeString =
+                    Routes.routeToConfig route
 
-                    value =
-                        Encode.object
-                            [ ( "app", Encode.string routeString )
-                            , ( "method", Encode.string "get" )
-                            ]
-                in
-                    ( WaitingForConfig session route, storage value )
+                value =
+                    Encode.object
+                        [ ( "app", Encode.string routeString )
+                        , ( "method", Encode.string "get" )
+                        ]
+            in
+            ( WaitingForConfig session route, storage value )
 
 
 toSession : Model -> Session
@@ -90,25 +92,19 @@ toSession model =
             Cricket.toSession cricket
 
 
-port storage : Encode.Value -> Cmd msg
-
-
-port configs : (Decode.Value -> msg) -> Sub msg
-
-
 changeRoute : Encode.Value -> Route -> Model -> ( Model, Cmd Msg )
 changeRoute value route model =
     let
         session =
             toSession model
     in
-        case route of
-            Routes.Home ->
-                ( Home session, Routes.replaceUrl session.navKey Routes.Home )
+    case route of
+        Routes.Home ->
+            ( Home session, Routes.replaceUrl session.navKey Routes.Home )
 
-            Routes.Cricket ->
-                Cricket.init value session
-                    |> updateWith Cricket GotCricketMsg model
+        Routes.Cricket ->
+            Cricket.init value session
+                |> updateWith Cricket GotCricketMsg model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -117,32 +113,32 @@ update msg model =
         session =
             toSession model
     in
-        case ( msg, model ) of
-            ( ClickedLink urlRequest, _ ) ->
-                case urlRequest of
-                    Browser.Internal url ->
-                        ( model, Nav.pushUrl session.navKey (Url.toString url) )
+    case ( msg, model ) of
+        ( ClickedLink urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl session.navKey (Url.toString url) )
 
-                    Browser.External href ->
-                        ( model
-                        , Nav.load href
-                        )
+                Browser.External href ->
+                    ( model
+                    , Nav.load href
+                    )
 
-            ( ChangedUrl url, _ ) ->
-                requestRoute (Routes.fromUrl url) model
+        ( ChangedUrl url, _ ) ->
+            requestRoute (Routes.fromUrl url) model
 
-            ( RequestRoute maybeRoute, _ ) ->
-                requestRoute maybeRoute model
+        ( RequestRoute maybeRoute, _ ) ->
+            requestRoute maybeRoute model
 
-            ( ReceivedConfig config, WaitingForConfig _ route ) ->
-                changeRoute config route model
+        ( ReceivedConfig config, WaitingForConfig _ route ) ->
+            changeRoute config route model
 
-            ( GotCricketMsg subMsg, Cricket cricket ) ->
-                Cricket.update subMsg cricket
-                    |> updateWith Cricket GotCricketMsg model
+        ( GotCricketMsg subMsg, Cricket cricket ) ->
+            Cricket.update subMsg cricket
+                |> updateWith Cricket GotCricketMsg model
 
-            _ ->
-                ( model, Cmd.none )
+        _ ->
+            ( model, Cmd.none )
 
 
 updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -164,22 +160,22 @@ view model =
                 { title, body } =
                     Page.view page pageModel
             in
-                { title = title
-                , body = List.map (Html.map toMsg) body
-                }
+            { title = title
+            , body = List.map (Html.map toMsg) body
+            }
     in
-        case model of
-            Home home ->
-                Page.view Page.Home (Home.view home)
+    case model of
+        Home home ->
+            Page.view Page.Home (Home.view home)
 
-            WaitingForConfig _ _ ->
-                Page.view Page.Other { title = "WAITING", content = h1 [] [ text "BLANK" ] }
+        WaitingForConfig _ _ ->
+            Page.view Page.Other { title = "WAITING", content = h1 [] [ text "BLANK" ] }
 
-            NotFound _ ->
-                Page.view Page.Other { title = "NotFound", content = h1 [] [ text "NOT FOUND" ] }
+        NotFound _ ->
+            Page.view Page.Other { title = "NotFound", content = h1 [] [ text "NOT FOUND" ] }
 
-            Cricket cricket ->
-                viewPage Page.Cricket GotCricketMsg (Cricket.view cricket)
+        Cricket cricket ->
+            viewPage Page.Cricket GotCricketMsg (Cricket.view cricket)
 
 
 
