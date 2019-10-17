@@ -611,7 +611,7 @@ viewTotal model =
 viewBoard : Model -> Html Msg
 viewBoard model =
     div
-        [ id "main", class "wrapper" ]
+        [ class "wrapper" ]
         (viewHeader model
             ++ List.map (viewTargetRow model) targets
             ++ viewTotal model
