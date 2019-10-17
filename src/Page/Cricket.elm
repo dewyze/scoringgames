@@ -15,7 +15,6 @@ import Svg exposing (circle, rect)
 import Svg.Attributes as SvgAttr
 
 
-
 -- MODEL
 
 
@@ -32,10 +31,6 @@ type TargetState
     | One
     | Two
     | Points Int
-
-
-
--- TODO - Be int for faster processing?
 
 
 type alias PlayerId =
@@ -75,7 +70,7 @@ initTargets =
 initPlayer : Int -> Player
 initPlayer id =
     { id = id
-    , name = ""
+    , name = "Player " ++ fromInt id
     , targets = initTargets
     }
 
@@ -99,7 +94,7 @@ init value session =
         model =
             Result.withDefault (defaultModel session) result
     in
-    ( model, Cmd.none )
+        ( model, Cmd.none )
 
 
 
@@ -135,17 +130,17 @@ listToDictDecoder list =
                 intKey =
                     String.toInt key
             in
-            case intKey of
-                Just int ->
-                    ( int, value )
+                case intKey of
+                    Just int ->
+                        ( int, value )
 
-                Nothing ->
-                    ( 0, value )
+                    Nothing ->
+                        ( 0, value )
 
         newList =
             List.map (\tuple -> tupleConvert tuple) list
     in
-    Decode.succeed (Dict.fromList newList)
+        Decode.succeed (Dict.fromList newList)
 
 
 targetsDecoder : Decoder Targets
@@ -173,6 +168,10 @@ decoder session =
         |> hardcoded False
         |> hardcoded False
         |> hardcoded session
+
+
+
+-- ENCODERS
 
 
 targetStateEncoder : TargetState -> Encode.Value
@@ -218,6 +217,11 @@ encode model =
         , ( "app", Encode.string "cricket" )
         , ( "config", configEncoder model.players )
         ]
+
+
+writeConfig : Model -> ( Model, Cmd msg )
+writeConfig model =
+    ( model, storage (encode model) )
 
 
 
@@ -270,7 +274,6 @@ updateTargetState : TargetState -> Target -> Bool -> TargetState
 updateTargetState state target subtracting =
     if subtracting then
         previousState state target
-
     else
         nextState state target
 
@@ -281,11 +284,10 @@ setPlayerName playerId model newName =
         updatePlayer player =
             if player.id == playerId then
                 { player | name = newName }
-
             else
                 player
     in
-    { model | players = List.map updatePlayer model.players }
+        { model | players = List.map updatePlayer model.players }
 
 
 removePlayer : List Player -> List Player
@@ -294,7 +296,7 @@ removePlayer players =
         numPlayers =
             List.length players
     in
-    List.take (numPlayers - 1) players
+        List.take (numPlayers - 1) players
 
 
 addPlayer : List Player -> List Player
@@ -303,7 +305,7 @@ addPlayer players =
         newId =
             List.length players + 1
     in
-    players ++ [ initPlayer newId ]
+        players ++ [ initPlayer newId ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -314,31 +316,23 @@ update msg model =
                 updatePlayer player =
                     if player.id == playerId then
                         { player | targets = Dict.insert target (updateTargetState state target model.subtractingMode) player.targets }
-
                     else
                         player
             in
-            if not model.subtractingMode && targetClosedForAll model target then
-                ( model, storage (encode model) )
-
-            else
-                let
-                    newModel =
-                        { model | players = List.map updatePlayer model.players }
-                in
-                ( newModel, storage (encode newModel) )
+                if not model.subtractingMode && targetClosedForAll model target then
+                    writeConfig model
+                else
+                    writeConfig ({ model | players = List.map updatePlayer model.players })
 
         ToggleSettingsMode ->
             if model.settingsMode then
                 ( { model | settingsMode = False }, Cmd.none )
-
             else
                 ( { model | settingsMode = True }, Cmd.none )
 
         ToggleSubtractingMode ->
             if model.subtractingMode then
                 ( { model | subtractingMode = False }, Cmd.none )
-
             else
                 ( { model | subtractingMode = True }, Cmd.none )
 
@@ -350,45 +344,27 @@ update msg model =
                             | players = removePlayer model.players
                         }
                 in
-                ( newModel
-                , Cmd.none
-                )
-
+                    ( newModel
+                    , Cmd.none
+                    )
             else
                 ( model, Cmd.none )
 
         IncrementNumPlayers ->
             if List.length model.players < 4 then
-                let
-                    newModel =
-                        { model
-                            | players = addPlayer model.players
-                        }
-                in
-                ( newModel
-                , storage (encode model)
-                )
-
+                writeConfig ({ model | players = addPlayer model.players })
             else
-                ( model, storage (encode model) )
+                writeConfig (model)
 
         PlayerName id name ->
-            ( setPlayerName id model name, storage (encode model) )
+            writeConfig (setPlayerName id model name)
 
         NewGame ->
             let
                 resetPlayer player =
                     { player | targets = initTargets }
-
-                newModel =
-                    { model
-                        | players = List.map resetPlayer model.players
-                        , settingsMode = False
-                    }
             in
-            ( newModel
-            , storage (encode newModel)
-            )
+                writeConfig { model | players = List.map resetPlayer model.players, settingsMode = False }
 
 
 
@@ -412,9 +388,9 @@ viewSettingsPlayer numPlayers index player =
         formName =
             "player" ++ playerNumString ++ "name"
     in
-    [ label [ for formName ] [ text ("Player " ++ playerNumString) ]
-    , input [ class "player-name-input", type_ "text", name formName, placeholder (playerName player), onInput (PlayerName playerId) ] []
-    ]
+        [ label [ for formName ] [ text ("Player " ++ playerNumString) ]
+        , input [ class "player-name-input", type_ "text", name formName, placeholder (player.name), onInput (PlayerName playerId) ] []
+        ]
 
 
 viewSettings : Model -> Html Msg
@@ -423,18 +399,18 @@ viewSettings model =
         numPlayers =
             List.length model.players
     in
-    div
-        [ id "main", class "wrapper settings" ]
-        ([ span [ class "player-count-label" ] [ text "# of Players" ]
-         , button [ class "player-count-button", onClick DecrementNumPlayers ] [ text "-" ]
-         , span [ class "player-count-number" ] [ text (fromInt numPlayers) ]
-         , button [ class "player-count-button", onClick IncrementNumPlayers ] [ text "+" ]
-         ]
-            ++ List.concat (List.indexedMap (viewSettingsPlayer numPlayers) model.players)
-            ++ [ button [ onClick ToggleSettingsMode ] [ text "Done" ]
-               , div [ class "new-game" ] [ button [ onClick NewGame ] [ text "New Game" ] ]
-               ]
-        )
+        div
+            [ id "main", class "wrapper settings" ]
+            ([ span [ class "player-count-label" ] [ text "# of Players" ]
+             , button [ class "player-count-button", onClick DecrementNumPlayers ] [ text "-" ]
+             , span [ class "player-count-number" ] [ text (fromInt numPlayers) ]
+             , button [ class "player-count-button", onClick IncrementNumPlayers ] [ text "+" ]
+             ]
+                ++ List.concat (List.indexedMap (viewSettingsPlayer numPlayers) model.players)
+                ++ [ button [ onClick ToggleSettingsMode ] [ text "Done" ]
+                   , div [ class "new-game" ] [ button [ onClick NewGame ] [ text "New Game" ] ]
+                   ]
+            )
 
 
 
@@ -446,25 +422,10 @@ svgRect func state rotate =
     rect [ SvgAttr.x "5", SvgAttr.y "40", SvgAttr.width "90", SvgAttr.height "20", SvgAttr.fill (func state), SvgAttr.transform rotate ] []
 
 
-
--- TODO: Set this on the player
--- TODO: Or conver to maybe
-
-
-playerName : Player -> String
-playerName player =
-    if String.isEmpty player.name then
-        "Player " ++ fromInt player.id
-
-    else
-        player.name
-
-
 editingSymbol : Model -> String
 editingSymbol model =
     if model.subtractingMode then
         "-"
-
     else
         "+"
 
@@ -473,7 +434,6 @@ forwardSlashColor : Bool -> TargetState -> String
 forwardSlashColor closed state =
     if closed then
         "#990000"
-
     else
         case state of
             Open ->
@@ -487,7 +447,6 @@ backSlashColor : Bool -> TargetState -> String
 backSlashColor closed state =
     if closed then
         "#990000"
-
     else
         case state of
             Open ->
@@ -504,7 +463,6 @@ circleColor : Bool -> TargetState -> String
 circleColor closed state =
     if closed then
         "#990000"
-
     else
         case state of
             Points p ->
@@ -517,7 +475,7 @@ circleColor closed state =
 viewPlayerHeader : Int -> Player -> Html Msg
 viewPlayerHeader numPlayers player =
     div [ class ("player-name player-column players-" ++ fromInt numPlayers) ]
-        [ text (playerName player) ]
+        [ text (player.name) ]
 
 
 viewHeader : Model -> List (Html Msg)
@@ -526,14 +484,14 @@ viewHeader model =
         numPlayers =
             List.length model.players
     in
-    [ div
-        [ class "row info-row header-row" ]
-        ([ div [ class "number-column negative-toggle", onClick ToggleSubtractingMode ]
-            [ text (editingSymbol model) ]
-         ]
-            ++ List.map (\player -> viewPlayerHeader numPlayers player) model.players
-        )
-    ]
+        [ div
+            [ class "row info-row header-row" ]
+            ([ div [ class "number-column negative-toggle", onClick ToggleSubtractingMode ]
+                [ text (editingSymbol model) ]
+             ]
+                ++ List.map (\player -> viewPlayerHeader numPlayers player) model.players
+            )
+        ]
 
 
 targetStateForPlayerNumber : Int -> Player -> TargetState
@@ -584,18 +542,17 @@ viewPlayerTarget target model player =
         cssClass =
             "player-column players-" ++ playersCount ++ " marker"
     in
-    if model.subtractingMode && points > 0 then
-        div [ class cssClass, onClick (ClickTarget player.id target state) ]
-            [ text (fromInt points) ]
-
-    else
-        div [ class cssClass ]
-            [ Svg.svg [ SvgAttr.viewBox "0 0 100 100", SvgAttr.height "100%", SvgAttr.style "background-color:#111", onClick (ClickTarget player.id target state) ]
-                [ svgRect (backSlashColor closed) state "rotate(135 50 50)"
-                , svgRect (forwardSlashColor closed) state "rotate(45 50 50)"
-                , circle [ SvgAttr.cx "50", SvgAttr.cy "50", SvgAttr.r "45", SvgAttr.stroke (circleColor closed state), SvgAttr.strokeWidth "10", SvgAttr.fill "none" ] []
+        if model.subtractingMode && points > 0 then
+            div [ class cssClass, onClick (ClickTarget player.id target state) ]
+                [ text (fromInt points) ]
+        else
+            div [ class cssClass ]
+                [ Svg.svg [ SvgAttr.viewBox "0 0 100 100", SvgAttr.height "100%", SvgAttr.style "background-color:#111", onClick (ClickTarget player.id target state) ]
+                    [ svgRect (backSlashColor closed) state "rotate(135 50 50)"
+                    , svgRect (forwardSlashColor closed) state "rotate(45 50 50)"
+                    , circle [ SvgAttr.cx "50", SvgAttr.cy "50", SvgAttr.r "45", SvgAttr.stroke (circleColor closed state), SvgAttr.strokeWidth "10", SvgAttr.fill "none" ] []
+                    ]
                 ]
-            ]
 
 
 viewTargetRow : Model -> Target -> Html Msg
@@ -611,7 +568,6 @@ viewTarget : Target -> String
 viewTarget target =
     if target == 25 then
         "B"
-
     else
         fromInt target
 
@@ -626,7 +582,7 @@ scoreForPlayer player =
         states =
             List.map (\n -> Maybe.withDefault (Points 0) (Dict.get n player.targets)) targets
     in
-    List.foldl (+) 0 (List.map pointsForState states)
+        List.foldl (+) 0 (List.map pointsForState states)
 
 
 viewPlayerTotal : Model -> Player -> Html Msg
@@ -638,7 +594,7 @@ viewPlayerTotal model player =
         cssClass =
             "player-total player-column players-" ++ numPlayers
     in
-    div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
+        div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
 
 
 viewTotal : Model -> List (Html Msg)
@@ -666,7 +622,6 @@ viewContent : Model -> Html Msg
 viewContent model =
     if model.settingsMode then
         viewSettings model
-
     else
         viewBoard model
 

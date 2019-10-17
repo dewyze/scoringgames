@@ -17,6 +17,8 @@ app.ports.storage.subscribe(function(data) {
     app.ports.configs.send(appConfig);
   } else if (data.method == "set") {
     localStorage.setItem(data.app, JSON.stringify(data.config));
+  } else if (data.method == "clear") {
+    localStorage.removeItem(data.app);
   }
 });
 document.getElementById("main").style.height = window.innerHeight + "px";
