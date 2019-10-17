@@ -30,9 +30,7 @@ init session =
 viewContent : Model -> Html msg
 viewContent _ =
     div [ class "page" ]
-        [ h1 [] [ text "Home Page" ]
-        , h2 [] [ text "Session" ]
-        , a [ Routes.href Routes.Cricket ] [ text "Go to cricket" ]
+        [ a [ Routes.href Routes.Cricket ] [ img [ src "%PUBLIC_URL%/images/cricket_white.png", height 200, width 200, style "margin-top" "50px" ] [] ]
         ]
 
 

@@ -601,7 +601,7 @@ viewTotal : Model -> List (Html Msg)
 viewTotal model =
     [ div [ class "row info-row total-row" ]
         ([ div [ class "number-column", onClick ToggleSettingsMode ]
-            [ img [ src "%PUBLIC_URL%/settings.png", SvgAttr.height "90%" ] [] ]
+            [ img [ src "%PUBLIC_URL%/images/settings.png", SvgAttr.height "90%" ] [] ]
          ]
             ++ List.map (\player -> viewPlayerTotal model player) model.players
         )
