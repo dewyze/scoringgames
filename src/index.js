@@ -1,6 +1,9 @@
 import "./main.css";
 import { Elm } from "./Main.elm";
 import * as serviceWorker from "./serviceWorker";
+require("./fastclick");
+
+Origami.fastclick(document.body);
 
 // var config = localStorage.getItem("config");
 // config = { message: "Success!", click: 0 };
@@ -12,7 +15,6 @@ app.ports.storage.subscribe(function(data) {
   if (data.method == "get") {
     var appConfig = localStorage.getItem(data.app) || {};
     app.ports.configs.send(appConfig);
-    document.getElementById("main").style.height = window.innerHeight + "px";
   } else if (data.method == "set") {
     localStorage.setItem(data.app, JSON.stringify(data.config));
   } else if (data.method == "clear") {
