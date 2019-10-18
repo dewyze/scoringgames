@@ -44,6 +44,7 @@ body {
 }
 
 .player-column {
+  color: white;
   height: 100%;
   display: inline-block;
   position: relative;
