@@ -5,7 +5,7 @@ import * as serviceWorker from "./serviceWorker";
 // var config = localStorage.getItem("config");
 // config = { message: "Success!", click: 0 };
 var app = Elm.Main.init({
-  // flags: config,
+  flags: { windowHeight: window.innerHeight },
   node: document.getElementById("root")
 });
 app.ports.storage.subscribe(function(data) {

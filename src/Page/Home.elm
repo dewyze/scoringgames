@@ -4,11 +4,9 @@ import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import Json.Decode as Decode exposing (Decoder, Value, decodeValue, int, string)
-import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
-import Result exposing (toMaybe)
 import Routes
 import Session exposing (Session)
+
 
 
 -- MODEL
