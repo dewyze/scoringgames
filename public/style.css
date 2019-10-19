@@ -4,6 +4,9 @@ body {
   text-align: center;
   color: white;
   height: 100%;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .wrapper {
