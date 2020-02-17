@@ -595,7 +595,7 @@ scoreForPlayer : Player -> Int
 scoreForPlayer player =
     let
         states =
-            List.map (\n -> Maybe.withDefault (Points 0) (Dict.get n player.targets)) targets
+            List.map (\num -> Maybe.withDefault (Points 0) (Dict.get num player.targets)) targets
     in
     List.foldl (+) 0 (List.map pointsForState states)
 
