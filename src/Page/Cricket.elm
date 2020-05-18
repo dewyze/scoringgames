@@ -49,6 +49,7 @@ type alias Model =
     { players : List Player
     , subtractingMode : Bool
     , settingsMode : Bool
+    , showCelebration : Bool
     , session : Session
     }
 
@@ -81,6 +82,7 @@ defaultModel session =
     { players = List.map initPlayer [ 1, 2 ]
     , subtractingMode = False
     , settingsMode = False
+    , showCelebration = True
     , session = session
     }
 
@@ -168,6 +170,7 @@ decoder session =
         |> required "players" playersDecoder
         |> hardcoded False
         |> hardcoded False
+        |> hardcoded True
         |> hardcoded session
 
 
@@ -537,6 +540,33 @@ targetClosedForAll model target =
     List.all (targetClosed target model) model.players
 
 
+hasWinner : Model -> Bool
+hasWinner model =
+    List.any (allTargetsClosedForPlayer model) model.players
+
+
+playerIsWinner : Model -> Player -> Bool
+playerIsWinner model player =
+    let
+        otherPlayers =
+            List.filter (\p -> p.id /= player.id) model.players
+
+        maxScore =
+            List.maximum (List.map scoreForPlayer otherPlayers)
+    in
+    case maxScore of
+        Just score ->
+            allTargetsClosedForPlayer model player && scoreForPlayer player > score
+
+        Nothing ->
+            False
+
+
+allTargetsClosedForPlayer : Model -> Player -> Bool
+allTargetsClosedForPlayer model player =
+    List.all (\target -> targetClosed target model player) targets
+
+
 viewPlayerTarget : Target -> Model -> Player -> Html Msg
 viewPlayerTarget target model player =
     let
@@ -609,7 +639,11 @@ viewPlayerTotal model player =
         cssClass =
             "player-total player-column players-" ++ numPlayers
     in
-    div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
+    if playerIsWinner model player then
+        div [ class cssClass ] [ text "W" ]
+
+    else
+        div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
 
 
 viewTotal : Model -> List (Html Msg)
