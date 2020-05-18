@@ -666,7 +666,7 @@ viewPlayerTarget target model player =
 
     else
         div [ class cssClass ]
-            [ Svg.svg [ SvgAttr.viewBox "0 0 100 100", SvgAttr.height "100%", SvgAttr.style "background-color:#111", onClick (ClickTarget player.id target state) ]
+            [ Svg.svg [ SvgAttr.viewBox "0 0 100 100", SvgAttr.style "background-color:#111", onClick (ClickTarget player.id target state) ]
                 [ svgRect (backSlashColor model target player) state "rotate(135 50 50)"
                 , svgRect (forwardSlashColor model target player) state "rotate(45 50 50)"
                 , circle [ SvgAttr.cx "50", SvgAttr.cy "50", SvgAttr.r "45", SvgAttr.stroke (circleColor model target player state), SvgAttr.strokeWidth "10", SvgAttr.fill "none" ] []

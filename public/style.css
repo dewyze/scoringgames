@@ -21,7 +21,13 @@ body {
 .header-row {
   height: 6%;
   font-family: "Arial Black", sans-serif;
-  font-size: 4vw;
+  font-size: 1rem;
+  display: flex;
+  width: calc(100% - 8px);
+}
+
+.header-row div {
+  flex: 0 1 auto;
 }
 
 .negative-toggle {
@@ -31,6 +37,12 @@ body {
 
 .marker-row {
   height: 12%;
+  display: flex;
+  width: calc(100% - 8px);
+}
+
+.marker-row div {
+  flex: 0 1 auto;
 }
 
 .total-row {
@@ -40,6 +52,7 @@ body {
   font-size: 6vh;
   border-top: 2px solid white;
   margin-top: 5px;
+  width: calc(100% - 8px);
 }
 
 .total-row div {
@@ -102,7 +115,7 @@ body {
 
 .marker-row .number-column {
   font-family: "Arial Black", sans-serif;
-  font-size: 9vh;
+  font-size: 7vh;
   vertical-align: top;
   color: white;
 }
@@ -168,4 +181,9 @@ label {
 
 .red {
   color: red;
+}
+
+svg {
+  width: 95%;
+  height: 95%;
 }
