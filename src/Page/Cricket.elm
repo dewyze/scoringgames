@@ -1,5 +1,6 @@
 module Page.Cricket exposing (Model, Msg, decoder, init, subscriptions, toSession, update, view)
 
+import Debug exposing (log)
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -7,12 +8,16 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode exposing (Decoder, Value, decodeValue, int, keyValuePairs, list, string)
 import Json.Decode.Pipeline as Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
+import List.Extra
 import Ports exposing (storage)
+import Process exposing (sleep)
 import Result exposing (toMaybe)
 import Session exposing (Session)
 import String exposing (fromInt, toInt)
 import Svg exposing (circle, rect)
 import Svg.Attributes as SvgAttr
+import Task exposing (perform)
+import Update.Extra as Update
 
 
 
@@ -49,7 +54,7 @@ type alias Model =
     { players : List Player
     , subtractingMode : Bool
     , settingsMode : Bool
-    , showCelebration : Bool
+    , animationFrame : Int
     , session : Session
     }
 
@@ -82,7 +87,7 @@ defaultModel session =
     { players = List.map initPlayer [ 1, 2 ]
     , subtractingMode = False
     , settingsMode = False
-    , showCelebration = True
+    , animationFrame = -1
     , session = session
     }
 
@@ -170,7 +175,7 @@ decoder session =
         |> required "players" playersDecoder
         |> hardcoded False
         |> hardcoded False
-        |> hardcoded True
+        |> hardcoded 0
         |> hardcoded session
 
 
@@ -240,6 +245,7 @@ type Msg
     | IncrementNumPlayers
     | PlayerName Int String
     | NewGame
+    | AnimateWinner
 
 
 previousState : TargetState -> Target -> TargetState
@@ -325,12 +331,17 @@ update msg model =
 
                     else
                         player
+
+                newModel =
+                    { model | players = List.map updatePlayer model.players }
             in
             if not model.subtractingMode && targetClosedForAll model target then
                 writeConfig model
 
             else
-                writeConfig { model | players = List.map updatePlayer model.players }
+                writeConfig newModel
+                    |> Update.filter (hasWinner newModel)
+                        (Update.andThen update AnimateWinner)
 
         ToggleSettingsMode ->
             if model.settingsMode then
@@ -376,7 +387,14 @@ update msg model =
                 resetPlayer player =
                     { player | targets = initTargets }
             in
-            writeConfig { model | players = List.map resetPlayer model.players, settingsMode = False }
+            writeConfig { model | players = List.map resetPlayer model.players, settingsMode = False, animationFrame = -1 }
+
+        AnimateWinner ->
+            if model.animationFrame > 5 then
+                ( model, Cmd.none )
+
+            else
+                ( { model | animationFrame = model.animationFrame + 1 }, sleep 600 |> perform (always AnimateWinner) )
 
 
 
@@ -443,9 +461,19 @@ editingSymbol model =
         "+"
 
 
-forwardSlashColor : Bool -> TargetState -> String
-forwardSlashColor closed state =
-    if closed then
+forwardSlashColor : Model -> Target -> Player -> TargetState -> String
+forwardSlashColor model target player state =
+    let
+        isWinner =
+            playerIsWinner model player
+
+        closed =
+            targetClosedForAll model target
+    in
+    if isWinner && model.animationFrame < 5 then
+        colorForAnimationFrame model target
+
+    else if closed then
         "#990000"
 
     else
@@ -457,9 +485,19 @@ forwardSlashColor closed state =
                 "#DDD"
 
 
-backSlashColor : Bool -> TargetState -> String
-backSlashColor closed state =
-    if closed then
+backSlashColor : Model -> Target -> Player -> TargetState -> String
+backSlashColor model target player state =
+    let
+        isWinner =
+            playerIsWinner model player
+
+        closed =
+            targetClosedForAll model target
+    in
+    if isWinner && model.animationFrame < 5 then
+        colorForAnimationFrame model target
+
+    else if closed then
         "#990000"
 
     else
@@ -474,9 +512,43 @@ backSlashColor closed state =
                 "#DDD"
 
 
-circleColor : Bool -> TargetState -> String
-circleColor closed state =
-    if closed then
+colorForAnimationFrame : Model -> Target -> String
+colorForAnimationFrame model target =
+    let
+        index =
+            List.Extra.elemIndex target targets
+
+        targetMod =
+            case index of
+                Just num ->
+                    modBy 2 num
+
+                Nothing ->
+                    0
+
+        frameMod =
+            modBy 2 model.animationFrame
+    in
+    if targetMod == frameMod then
+        "#990000"
+
+    else
+        "#DDD"
+
+
+circleColor : Model -> Target -> Player -> TargetState -> String
+circleColor model target player state =
+    let
+        isWinner =
+            playerIsWinner model player
+
+        closed =
+            targetClosedForAll model target
+    in
+    if isWinner && model.animationFrame < 5 then
+        colorForAnimationFrame model target
+
+    else if closed then
         "#990000"
 
     else
@@ -542,7 +614,7 @@ targetClosedForAll model target =
 
 hasWinner : Model -> Bool
 hasWinner model =
-    List.any (allTargetsClosedForPlayer model) model.players
+    List.any (playerIsWinner model) model.players
 
 
 playerIsWinner : Model -> Player -> Bool
@@ -576,6 +648,9 @@ viewPlayerTarget target model player =
         points =
             pointsForState state
 
+        isWinner =
+            playerIsWinner model player
+
         closed =
             targetClosedForAll model target
 
@@ -592,9 +667,9 @@ viewPlayerTarget target model player =
     else
         div [ class cssClass ]
             [ Svg.svg [ SvgAttr.viewBox "0 0 100 100", SvgAttr.height "100%", SvgAttr.style "background-color:#111", onClick (ClickTarget player.id target state) ]
-                [ svgRect (backSlashColor closed) state "rotate(135 50 50)"
-                , svgRect (forwardSlashColor closed) state "rotate(45 50 50)"
-                , circle [ SvgAttr.cx "50", SvgAttr.cy "50", SvgAttr.r "45", SvgAttr.stroke (circleColor closed state), SvgAttr.strokeWidth "10", SvgAttr.fill "none" ] []
+                [ svgRect (backSlashColor model target player) state "rotate(135 50 50)"
+                , svgRect (forwardSlashColor model target player) state "rotate(45 50 50)"
+                , circle [ SvgAttr.cx "50", SvgAttr.cy "50", SvgAttr.r "45", SvgAttr.stroke (circleColor model target player state), SvgAttr.strokeWidth "10", SvgAttr.fill "none" ] []
                 ]
             ]
 
@@ -637,13 +712,13 @@ viewPlayerTotal model player =
             fromInt (List.length model.players)
 
         cssClass =
-            "player-total player-column players-" ++ numPlayers
-    in
-    if playerIsWinner model player then
-        div [ class cssClass ] [ text "W" ]
+            if playerIsWinner model player then
+                "player-total player-column red players-" ++ numPlayers
 
-    else
-        div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
+            else
+                "player-total player-column players-" ++ numPlayers
+    in
+    div [ class cssClass ] [ text (fromInt (scoreForPlayer player)) ]
 
 
 viewTotal : Model -> List (Html Msg)
