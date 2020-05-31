@@ -628,7 +628,7 @@ playerIsWinner model player =
     in
     case maxScore of
         Just score ->
-            allTargetsClosedForPlayer model player && scoreForPlayer player > score
+            allTargetsClosedForPlayer model player && scoreForPlayer player >= score
 
         Nothing ->
             False
